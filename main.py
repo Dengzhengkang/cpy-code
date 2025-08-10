@@ -9,11 +9,7 @@ label = {'~start':0}
 #代码编写区↓
 code =\
 '''
-imp *math
-mov _math_add_value1 '4'
-mov _math_add_value2 '5'
-got ~math_add
-cal _None #out _math_add_return
+cal _None #out "hello^sworld!"
 '''
 #转义符 ^n:换行 ^s:空格 ^d:分隔
 
