@@ -15,7 +15,7 @@
 
 ##### 数据类型:
 
-| Type:Str | Type:Int | Type:Float |  Type:List | Type:Label | 变量|
+| Type:Str | Type:Int | Type:Float |  Type:List | 标签 | 变量|
 |-----------|-------------|-------------|--------------|-------------|-------|
 |  "xxx"  |  'xxx'  |   <x.xx>  |  {xxx;xxx} | ~xxx | _xxx |
 
