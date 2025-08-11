@@ -1,4 +1,4 @@
-value = {'_None':['Type:None',''],'_Error':['Type:Str','']} #[<type>,<value>]
+value = {'_None':['Type:None',''],'_Error':['Type:String','']} #[<type>,<value>]
 last_label = [0] #上一次的got位置
 error_label = ''
 include_pack = ['']
@@ -9,13 +9,16 @@ label = {'~start':0}
 #代码编写区↓
 code =\
 '''
-imp *math
-new _a
-mov _a '4'
-mov _math_sqrt_argu _a
-got ~math_sqrt
-cal _None #out _math_sqrt_return
+imp *gui
+mov _gui_new_name "text1"
+got ~gui_new
 
+mov _gui_new_name "text2"
+mov _gui_new_size "800x200"
+got ~gui_new
+
+got ~gui_mainloop
+cal _None #out "^nend"
 '''
 #转义符 ^n:换行 ^s:空格 ^d:分隔
 
@@ -76,7 +79,7 @@ def run(code):
             elif str(data)[0] == "'" and str(data)[-1] == "'":
                 return 'Type:Int'
             elif str(data)[0] == '"' and str(data)[-1] == '"':
-                return 'Type:Str'
+                return 'Type:String'
             elif str(data)[0] == '<' and str(data)[-1] == '>':
                 return 'Type:Float'
             elif str(data)[0] == '~':
@@ -218,9 +221,9 @@ def run(code):
                         run_error('typ value not exist')
                         continue
                     else:
-                        if command_data[0] == 'Type:Str':
+                        if command_data[0] == 'Type:String':
                             value[command_data[1]][1] = '"' + str(value[command_data[1]][1])[1:-1] +'"'
-                            value[command_data[1]][0] = 'Type:Str'
+                            value[command_data[1]][0] = 'Type:String'
 
                         elif command_data[0] == 'Type:Int':
                             str_to_int = 0
@@ -249,7 +252,7 @@ def run(code):
                         elif command_data[0] == 'Type:Float':
                             to_float_data = ''
 
-                            if value[command_data[1]][0] == 'Type:Str' or value[command_data[1]][0] == 'Type:Int':
+                            if value[command_data[1]][0] == 'Type:String' or value[command_data[1]][0] == 'Type:Int':
                                 try:
                                     to_float_data = float(str(value[command_data[1]][1])[1:-1])
                                 except:
@@ -432,7 +435,7 @@ def run(code):
                                     value[command_data[0]][1] = '<' + str(float(value[command_data[0]][1][1:-1]) + float(value[command_data[1]][1][1:-1])) + '>'
                             
                                 
-                                elif return_type(value[command_data[1]][1]) == 'Type:Str':
+                                elif return_type(value[command_data[1]][1]) == 'Type:String':
                                     value[command_data[0]][1] = '"' + str(value[command_data[0]][1][1:-1] + value[command_data[1]][1][1:-1]) + '"'
                                 else:
                                     run_error('add value type')
@@ -444,7 +447,7 @@ def run(code):
                             elif return_type(command_data[1]) == 'Type:Float':
                                 value[command_data[0]][1] = '<' + str(float(value[command_data[0]][1][1:-1]) + float(command_data[1][1:-1])) + '>'
                             
-                            elif return_type(command_data[1]) == 'Type:Str':
+                            elif return_type(command_data[1]) == 'Type:String':
                                 value[command_data[0]][1] = '"' + str(value[command_data[0]][1])[1:-1] + str(command_data[1][1:-1]) + '"'
                             else:
                                 run_error('add value type')
@@ -476,7 +479,7 @@ def run(code):
                                     value[command_data[0]][1] = '<' + str(float(value[command_data[0]][1][1:-1]) - float(value[command_data[1]][1][1:-1])) + '>'
                             
                                 
-                                elif return_type(value[command_data[1]][1]) == 'Type:Str':
+                                elif return_type(value[command_data[1]][1]) == 'Type:String':
                                     value[command_data[0]][1] = '"' + str(value[command_data[0]][1][1:-1] - value[command_data[1]][1][1:-1]) + '"'
                                 else:
                                     run_error('sub value type')
@@ -488,7 +491,7 @@ def run(code):
                             elif return_type(command_data[1]) == 'Type:Float':
                                 value[command_data[0]][1] = '<' + str(float(value[command_data[0]][1][1:-1]) - float(command_data[1][1:-1])) + '>'
                             
-                            elif return_type(command_data[1]) == 'Type:Str':
+                            elif return_type(command_data[1]) == 'Type:String':
                                 value[command_data[0]][1] = '"' + str(value[command_data[0]][1])[1:-1] - str(command_data[1][1:-1]) + '"'
                             else:
                                 run_error('sub value type')
@@ -599,7 +602,7 @@ def run(code):
                                 run_error('cal #in return not exist')
                                 continue
                             else:
-                                value[command_data[0]][0] = 'Type:Str'
+                                value[command_data[0]][0] = 'Type:String'
                                 value[command_data[0]][1] = translatr.to_in('"' +str(input()) + '"')
                             
                         else:
@@ -615,15 +618,12 @@ def run(code):
                                 continue
                             else:
                                 print_data = str(value[command_data[2]][1])
-
-                                if value[command_data[2]][0] != 'Type:List':#list保留标志{}
-                                    print_data = print_data[1:-1]
                         
                         else:
                             print_data = str(command_data[2])
-                            if return_type(command_data[2]) != 'Type:List':
-                                print_data = print_data[1:-1]
-                        
+
+                        if return_type(print_data) in ['Type:String','Type:Int','Type:String','Type:Float']: #这些类型输出删去标志
+                            print_data = print_data[1:-1]   
                         print_data = translatr.to_out(print_data)
                         
                         print(print_data,end='')
@@ -651,7 +651,7 @@ def run(code):
                                 
                                 if len_data[0] == 'Type:List':
                                     value[command_data[0]] = ['Type:Int',("'" +str(len(len_data[1][1:-1].split(';'))) + "'")]  
-                                elif len_data[0] == 'Type:Str':
+                                elif len_data[0] == 'Type:String':
                                     value[command_data[0]] = ['Type:Int',("'" + str(len(len_data[1][1:-1])) + "'")]
 
                                 elif len_data[0] == 'Type:Float':#返回小数位数
@@ -680,10 +680,10 @@ def run(code):
 
                             else:
                                 if return_type(command_data[2]) == 'Type:Value':#值为变量
-                                    value[command_data[0]][0] = 'Type:Str'
+                                    value[command_data[0]][0] = 'Type:String'
                                     value[command_data[0]][1] = str(value[command_data[2]][0])
                                 else:
-                                    value[command_data[0]][0] = 'Type:Str'
+                                    value[command_data[0]][0] = 'Type:String'
                                     value[command_data[0]][1] = tr(return_type(command_data[2]))
                         else:
                             run_error('cal #type return not value')
@@ -708,7 +708,7 @@ def run(code):
                                 run_error('cal #range value not exist')
                                 continue
                             else:
-                                if value[command_data[2]][0] == 'Type:Str' or value[command_data[2]][0] == 'Type:List':
+                                if value[command_data[2]][0] == 'Type:String' or value[command_data[2]][0] == 'Type:List':
                                     range_data = value[command_data[2]]
                                 else:
                                     run_error('cal #range value type')
@@ -716,7 +716,7 @@ def run(code):
                         else:
                             range_data = [return_type(command_data[2]),command_data[2]]
 
-                        if range_data[0] == 'Type:Str':
+                        if range_data[0] == 'Type:String':
                             range_data_len = len(str(range_data[1])[1:-1])
                         
                         elif range_data[0] == 'Type:List':
@@ -760,7 +760,7 @@ def run(code):
 
                                 range_data = str(range_data[1])[1:-1]
                                 
-                                value[command_data[0]] = ['Type:Str',('"' +str(range_data[start_index:end_index + 1]) + '"')]
+                                value[command_data[0]] = ['Type:Strint',('"' +str(range_data[start_index:end_index + 1]) + '"')]
 
                         else:
                             #print(start_index,end_index,range_data_len)
@@ -857,7 +857,7 @@ def run(code):
                     if value[command_data[0]][0] == 'Type:List':
                         idx_data_list[1] = str(value[command_data[0]][1])[1:-1].split(';')
                         
-                    elif value[command_data[0]][0] == 'Type:Str':
+                    elif value[command_data[0]][0] == 'Type:Strint':
                         idx_data_list[1] = str(value[command_data[0]][1])[1:-1]
                     else:
                         run_error('idx value type')
@@ -915,15 +915,15 @@ def run(code):
                                 run_error('rpy value not exist')
                                 continue
                             else:
-                                if value[command_data[1]][0] == 'Type:Str':
+                                if value[command_data[1]][0] == 'Type:String':
                                     rpy_command = str(value[command_data[1]][1])[1:-1]
                                 else:
                                     run_error('rpy value type')
                                     continue
                         else:
-                            if return_type(command_data[1]) == 'Type:Str':
+                            if return_type(command_data[1]) == 'Type:String':
                                 rpy_command = str(command_data[1])[1:-1]
-                                #print(rpy_command)
+                                
                             else:
                                 run_error('rpy value type')
                                 continue
@@ -932,8 +932,9 @@ def run(code):
                         try:
                             exec(rpy_command,globals(),locals())
                         except Exception as error_message:
-                            #print(error_message)
+                            
                             run_error('rpy command')
+                            print(error_message)#后期要改，临时
                             continue
 
                 else:
