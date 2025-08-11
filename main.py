@@ -9,7 +9,13 @@ label = {'~start':0}
 #代码编写区↓
 code =\
 '''
-cal _None #out "hello^sworld!"
+imp *math
+new _a
+mov _a '4'
+mov _math_sqrt_argu _a
+got ~math_sqrt
+cal _None #out _math_sqrt_return
+
 '''
 #转义符 ^n:换行 ^s:空格 ^d:分隔
 
@@ -22,7 +28,7 @@ class translatr: #处理转译
     def to_out(data):
         return str(data).replace('^s',' ').replace('^d',';').replace('^n','\n')
 
-def end():
+def end():#输出调试信息
 
     print('\n-----------------')
     print(label)
@@ -141,15 +147,18 @@ def run(code):
                             run_error('imp value not pack')
                             continue
                     
-                    return_load = load_pack(imp_pack_name)
-                    if return_load == 'Error':
-                        run_error('imp load')
-                        
+                    if imp_pack_name in include_pack:#已经导入包
+                        pass
                     else:
-                        for pack_line in return_load[1:]:
-                            code += pack_line
+                        return_load = load_pack(imp_pack_name)
+                        if return_load == 'Error':
+                            run_error('imp load')
+                            
+                        else:
+                            for pack_line in return_load[1:]:
+                                code += pack_line
+                        include_pack.append(imp_pack_name)
                     
-                
                  
         #before_run_line += 1
 
@@ -259,9 +268,9 @@ def run(code):
                             continue
             
         
-        elif command == 'got':#got <标签>
+        elif command == 'got':#got <标签> (<是否记录[False]>)
             #print('got')
-            if len(command_data)!= 1:
+            if not len(command_data) >= 1:
                 run_error('got format')
                 continue
             else:
@@ -277,7 +286,10 @@ def run(code):
                     run_error('got label not exist')
                     continue
                 else:
-                    last_label.append(run_index)
+                    if len(command_data) == 2 and command_data[1] == 'False':
+                        pass
+                    else:
+                        last_label.append(run_index)
                     run_index = int(label[command_data[0]]) - 1
         
         elif command == 'ifs': #ifs <值1> <值2>
@@ -669,10 +681,10 @@ def run(code):
                             else:
                                 if return_type(command_data[2]) == 'Type:Value':#值为变量
                                     value[command_data[0]][0] = 'Type:Str'
-                                    value[command_data[0]][1] = '"' + str(value[command_data[2]][0]) + '"'
+                                    value[command_data[0]][1] = str(value[command_data[2]][0])
                                 else:
                                     value[command_data[0]][0] = 'Type:Str'
-                                    value[command_data[0]][1] = '"' + str(return_type(command_data[2])) + '"'
+                                    value[command_data[0]][1] = tr(return_type(command_data[2]))
                         else:
                             run_error('cal #type return not value')
                             continue
@@ -911,21 +923,29 @@ def run(code):
                         else:
                             if return_type(command_data[1]) == 'Type:Str':
                                 rpy_command = str(command_data[1])[1:-1]
+                                #print(rpy_command)
                             else:
                                 run_error('rpy value type')
                                 continue
                                 
                         rpy_command = translatr.to_out(rpy_command)
                         try:
-                            exec(rpy_command,globals())
-                        except:
+                            exec(rpy_command,globals(),locals())
+                        except Exception as error_message:
+                            #print(error_message)
                             run_error('rpy command')
                             continue
 
                 else:
                     run_error('rpy return not value')
                     continue
-
+                    
+        elif command == 'put': #put <错误>
+            if len(command_data) != 1:
+                run_error('put format')
+            else:
+                run_error(translatr.to_out(command_data[0][1:-1]))
+                continue
 
         else:
             #print(command)
