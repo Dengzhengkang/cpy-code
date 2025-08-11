@@ -1,25 +1,24 @@
-rpy math v.1.0
-got ~end_pack
+rpy math v.1.1
+got ~end_math_pack
 
-;math_abs
+;========math_abs========
+
 new _math_abs_argu _math_abs_return
 new __math_abs_type
 ~math_abs
 cal __math_abs_type #type _math_abs_argu
 cmp __math_abs_type Type:Int
 got ~~math_abs_typetrue False
-got ~~math_abs_typefalse False
+put "math_abs^sargu^sformat"
+got ~
 
 ~~math_abs_typetrue
 rpy _None "value['_math_abs_return']=["Type:Int",("'"+str(abs(int(value['_math_abs_argu'][1][1:-1])))+"'")]"
 got ~
 
-~~math_abs_typefalse
-put "math_abs^sargu^sformat"
-got ~
+;========math_abs end=========
 
-
-;math_sqrt
+;========math_sqrt=========
 new __math_sqrt_type
 new _math_sqrt_argu _math_sqrt_return
 ~math_sqrt
@@ -28,7 +27,8 @@ cmp __math_sqrt_type Type:Int
 got ~~math_sqrt_typetrue False
 cmp __math_sqrt_type Type:Float
 got ~~math_sqrt_typetrue False
-got ~~math_sqrt_typefalse
+put "math_sqrt^sargu^sformat"
+got ~
 
 ~~math_sqrt_typetrue
 ifs _math_sqrt_argu '0'
@@ -41,8 +41,6 @@ got ~
 put "math_sqrt^sargu^ssmall"
 got ~
 
-~~math_sqrt_typefalse
-put "math_sqrt^sargu^sformat"
-got ~
+;========math_sqrt end=========
 
-~end_pack
+~end_math_pack
