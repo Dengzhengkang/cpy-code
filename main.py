@@ -9,6 +9,11 @@ label = {'~start':0}
 #代码编写区↓
 code =\
 '''
+new _d
+mov _d "abc"
+idx _d '2'
+cal _None #out _d
+
 imp *gui
 mov _gui_new_name "text1"
 got ~gui_new
@@ -583,7 +588,7 @@ def run(code):
                         run_error('div value1 type')
                         continue
 
-        elif command == 'cal': #cal <返回值> <命令> <参数> ; #in,#out,#read,#write,#type,#len,#split
+        elif command == 'cal': #cal <返回值> <命令> <参数> ; #in,#out,#read,#write,#type,#len,#split,#range
             if not len(command_data) >= 2:
                 run_error('cal format')
                 continue

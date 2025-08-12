@@ -1,7 +1,7 @@
 rpy gui v.1.0
 got ~end_gui_pack
 
-;--------gui_new--------
+;========gui_new========
 
 new _gui_new_name _gui_new_size _gui_new_return
 new __gui_new_sizetype
@@ -10,7 +10,7 @@ err ~~gui_ner_error
 
 ;未指定name
 cmp _gui_new_name 
-moc _gui_new_name ""
+mov _gui_new_name ""
 
 ;未指定size
 cmp _gui_new_size 
@@ -33,7 +33,7 @@ got ~
 put "gui_new error"
 got ~
 
-;--------gui_new end--------
+;========gui_new end========
 
 ;gui_mainloop
 ~gui_mainloop
