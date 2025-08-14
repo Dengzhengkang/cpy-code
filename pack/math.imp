@@ -13,7 +13,7 @@ put "math_abs^sargu^sformat"
 got ~
 
 ~~math_abs_typetrue
-rpy _None "value['_math_abs_return']=["Type:Int",("'"+str(abs(int(value['_math_abs_argu'][1][1:-1])))+"'")]"
+cal _None #python "value['_math_abs_return']=["Type:Int",("'"+str(abs(int(value['_math_abs_argu'][1][1:-1])))+"'")]"
 got ~
 
 ;========math_abs end=========
@@ -33,8 +33,8 @@ got ~
 ~~math_sqrt_typetrue
 ifs _math_sqrt_argu '0'
 got ~~math_sqrt_small False
-rpy _None "import^smath"
-rpy _None "value['_math_sqrt_return']=["Type:Float",("'"+str(math.sqrt(int(value['_math_sqrt_argu'][1][1:-1])))+"'")]"
+cal _None #python "import^smath"
+cal _None #python "value['_math_sqrt_return']=["Type:Float",("'"+str(math.sqrt(int(value['_math_sqrt_argu'][1][1:-1])))+"'")]"
 got ~
 
 ~~math_sqrt_small
