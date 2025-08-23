@@ -1,53 +1,46 @@
+
 value = {'_None':['Type:None',''],'_Error':['Type:String','']} #[<type>,<value>]
 last_label = [0] #上一次的got位置
 error_label = ''
-include_pack = ['']
 error_flag = False
-
+include_pack = ['']
 label = {'~start':0}
+run_index = 0
 
+debug_flag = False #调试
+debug_hook = [] #钩子列表 0:返回状态 1:返回执行命令，2:执行下一行
 #代码编写区↓
 code =\
 '''
-new _count
-mov _count '0'
-
-~Loop
-cal _None #out "hello^sworld^n"
-
-add _count '1'
-ifs _count '10'
-got ~Loop
-got ~end
-
-~end
-;二进制处理没做完！
+cal _None #out "123"
 '''
 #转义符 ^n:换行 ^s:空格 ^d:分隔
+# 二进制处理没做完！gui出问题，err处理加～返回默认逻辑
 
 class translatr: #处理转译
     @staticmethod #可要可不要，目的省去self（python自动省去）
     def to_in(data):
         return str(data).replace(' ','^s').replace(';','^d')
     
-    @staticmethod 
+    @staticmethod
     def to_out(data):
         return str(data).replace('^s',' ').replace('^d',';').replace('^n','\n')
     
 def end():#输出调试信息
-
-    print('\n-----------------')
-    print(label)
-    print(value)
-    print(last_label)
-
+    if debug_flag == True:
+        debug_hook[0]('end')
+    else:
+        print('\n-----------------')
+        print(label)
+        print(value)
+        print(last_label)
+        
 def run(code):
     global run_index
     global error_flag
     global error_label
 
     run_index = 0
-    data = code.split('\n')
 
     def load_pack(name):
         try:
@@ -65,6 +58,9 @@ def run(code):
             value['_Error'][1] = '"' +str(message) +'"'
             return
         
+        elif debug_flag == True: #调试
+            debug_hook[0]('error',message)
+
         else:
             print('Error: ' + str(message) + '[' + str(run_index) + ']')
             end()
@@ -174,9 +170,10 @@ def run(code):
                  
         #before_run_line += 1
 
-    run_index = 0
-    error_flag = False
     code = code.split('\n')
+    if debug_flag == True:
+        debug_hook[0]('first run end',code)
+
 
     while run_index < len(code):
 
@@ -185,6 +182,9 @@ def run(code):
         line = code[run_index]
         command = line.split(' ',1)[0]
         command_data = line.split(' ')[1:]
+
+        if debug_flag == True and run_index != 0 and line != '': #调试
+            debug_hook[1](command,command_data)
 
         if line == '' or (line[0] in [';','~','\n']) or (command in ['new','imp']):#跳过执行
             run_index += 1
@@ -196,8 +196,9 @@ def run(code):
                 continue
 
             else:
-                
-                if not command_data[0] in value.keys():#判断变量
+                if command_data[0] == '~':
+                    error_flag = False
+                elif not command_data[0] in value.keys():#判断变量
                     run_error('mov value not exist value')
                     continue
 
@@ -326,6 +327,7 @@ def run(code):
                 run_error('got format')
                 continue
             else:
+            
                 if command_data[0] == '~': #返回上一次got
                     if not len(last_label) > 0:
                         run_error('got can not find last label')
@@ -337,6 +339,7 @@ def run(code):
                 elif not command_data[0] in label.keys():
                     run_error('got label not exist')
                     continue
+
                 else:
                     if len(command_data) == 2 and command_data[1] == 'False':
                         pass #静默跳转不记录
@@ -344,7 +347,7 @@ def run(code):
                         last_label.append(run_index)
 
                     run_index = int(label[command_data[0]]) - 1
-        
+
 
         elif command == 'ifs': #ifs <值1> <值2>
             if len(command_data) != 2:
@@ -971,8 +974,9 @@ def run(code):
                 continue
             else:
                 if command_data[0] == '~':
-                    error_flag = True
-                    error_label = int(last_label[-1])
+                    error_flag = False
+                    error_label = 0
+
                 elif command_data[0] in label.keys():
                     error_flag = True
                     error_label = label[command_data[0]]
@@ -995,9 +999,13 @@ def run(code):
             continue
 
         #print(value)
-        run_index += 1
+        if debug_flag == True: #调试模式
+            debug_hook[2](run_index)
+        else:
+            run_index += 1
      
-    #print(code)
+    #print(code)    
     end()
 
-run(code)
+if __name__ == '__main__': #main.py直接运行
+    run(code)
