@@ -1,0 +1,7 @@
+FormatError
+TypeError
+ValueExist
+LoadError
+ValueError
+ArguError
+LabelError

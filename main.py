@@ -12,7 +12,8 @@ debug_hook = [] #钩子列表 0:返回状态 1:返回执行命令，2:执行下�
 #代码编写区↓
 code =\
 '''
-cal _None #out "123"
+cal _None #out "123"12
+34
 '''
 #转义符 ^n:换行 ^s:空格 ^d:分隔
 # 二进制处理没做完！gui出问题，err处理加～返回默认逻辑
@@ -54,6 +55,9 @@ def run(code):
         global run_index
 
         if error_flag == True: #开启err
+            if debug_flag == True: #调试
+                debug_hook[0]('flag_error',message)
+
             run_index = error_label
             value['_Error'][1] = '"' +str(message) +'"'
             return
@@ -119,25 +123,25 @@ def run(code):
         
         elif command == 'new': #new <1> <2> ...
             if len(line) == 1:
-                run_error('new fomat')
+                run_error('FormatError')
                 continue
             else:
                 
                 for create_value in line.split(' ')[1:]:
                     
                     if return_type(create_value) != 'Type:Value':
-                        run_error('new not value')
+                        run_error('TypeError')
                         continue
                     else:
                         if create_value in value.keys():
-                            run_error('new value exist')
+                            run_error('ValueExist')
                             continue
                         else:
                             value[create_value] = ['Type:None','']
         
         elif command == 'imp':#imp <包>
             if len(line) == 1:
-                run_error('imp format')
+                run_error('FormatError')
                 continue
             else:
                 for imp_pack in line.split(' ')[1:]:
@@ -146,13 +150,13 @@ def run(code):
                         if return_type(value[imp_pack]) == 'Type:Pack':
                             imp_pack_name = value[imp_pack]
                         else:
-                            run_error('imp value not pack')
+                            run_error('TypeError')
                             continue
                     else:
                         if return_type(imp_pack) == 'Type:Pack':
                             imp_pack_name = imp_pack
                         else:
-                            run_error('imp value not pack')
+                            run_error('TypeError')
                             continue
                     
                     if imp_pack_name in include_pack:#已经导入包
@@ -160,15 +164,13 @@ def run(code):
                     else:
                         return_load = load_pack(imp_pack_name)
                         if return_load == 'Error':
-                            run_error('imp load')
+                            run_error('LoadError')
                             
                         else:
                             for pack_line in return_load[1:]:
                                 code += pack_line
                         include_pack.append(imp_pack_name)
                     
-                 
-        #before_run_line += 1
 
     code = code.split('\n')
     if debug_flag == True:
@@ -192,20 +194,20 @@ def run(code):
         
         if command == 'mov': #mov <变量> <值>
             if len(command_data) != 2:
-                run_error('mov format')
+                run_error('FormatError')
                 continue
 
             else:
                 if command_data[0] == '~':
                     error_flag = False
                 elif not command_data[0] in value.keys():#判断变量
-                    run_error('mov value not exist value')
+                    run_error('ValueError')
                     continue
 
                 else:
                     if return_type(command_data[1]) == 'Type:Value': #<值>为变量
                         if not command_data[1] in value.keys():
-                            run_error('mov value not exist')
+                            run_error('ValueExist')
                             continue
                         else:
                             value[command_data[0]] = value[command_data[1]]
@@ -215,12 +217,12 @@ def run(code):
     
         elif command == 'typ': #typ <变量> <类型>;int str list float
             if len(command_data) != 2:
-                run_error('type format')
+                run_error('FormatError')
                 continue
             else:
                 
                 if not command_data[0] in value.keys():
-                    run_error('typ value not exist value')
+                    run_error('ValueError')
                     continue
                 else:
                     if command_data[1] == 'Type:String':
@@ -241,7 +243,7 @@ def run(code):
                                     byte_data = '-' + byte_data
             
                             except:
-                                run_error('typ can not to byte')
+                                run_error('TypeError')
                             else:
                                 byte_data = "'" + str(byte_data) + "'"
                                 value[command_data[0]] = ['Type:Int',byte_data]
@@ -250,7 +252,7 @@ def run(code):
                             try:
                                 typ_to_int = int(str(value[command_data[0]][1])[1:-1])
                             except:
-                                run_error('typ can not to int')
+                                run_error('TypeError')
                                 continue
                             else:
                                 value[command_data[0]][1] = "'" + str(typ_to_int) + "'"
@@ -273,7 +275,7 @@ def run(code):
                                 typ_to_byte = '[' + typ_to_flag + ';' + typ_to_byte +']'
                             except:
 
-                                run_error('typ can not to type')
+                                run_error('TypeError')
                                 continue
 
                             else:
@@ -283,7 +285,7 @@ def run(code):
                         elif value[command_data[0]][0] == 'Type:Strint': #计划中
                             pass
                         else:
-                            run_error('typ to byte type')
+                            run_error('TypeError')
                             continue
 
 
@@ -307,30 +309,30 @@ def run(code):
                             try:
                                 to_float_data = float(str(value[command_data[0]][1])[1:-1])
                             except:
-                                run_error('typ can not to float')
+                                run_error('TypeError')
                                 continue
                             else:
                                 value[command_data[0]] = ['Type:Float',('<'+ str(to_float_data) + '>')]
                         else:
-                            run_error('typ to float type')
+                            run_error('TypeError')
                             continue
                 
                     else:
                         #print('\n',line,'\n\n\n')
                         #print('\n',command_data[0],'\n')
-                        run_error('typ unkown command')
+                        run_error('ArguError')
                         continue        
         
         elif command == 'got':#got <标签> (<是否记录[False]>)
             #print('got')
             if not len(command_data) >= 1:
-                run_error('got format')
+                run_error('FormatError')
                 continue
             else:
             
                 if command_data[0] == '~': #返回上一次got
                     if not len(last_label) > 0:
-                        run_error('got can not find last label')
+                        run_error('LabelError')
                         continue
                     else:
                         run_index = int(last_label[-1])
@@ -357,7 +359,7 @@ def run(code):
             else:
                 ifs_data_0 = ['Type:None','']
                 ifs_data_1 = ['Type:None','']
-                if return_type(command_data[0]) == 'Type:Value':#<值1>为变量
+                if return_type(command_data[0]) == 'Type:Value':#<值1>为变量                    ========错误该到这===
                     if not command_data[0] in value.keys():
                         run_error('ifs value1 not exist')
                         continue
@@ -995,7 +997,7 @@ def run(code):
 
         else:
             #print(command)
-            run_error('unkown command')
+            run_error('CommandError')
             continue
 
         #print(value)
