@@ -29,19 +29,31 @@ def open_file(*temp):
         tkinter.messagebox.showerror('打开','文件读取失败')
 
 def set_stop(event):
-    line = int(float(event.widget.index("insert")))
+    line = int(float(event.widget.index("current")))
     stop_place.append(line)
     ui_text_run.tag_add("stopplace", f"{line}.0", f"{line}.end")
-    updata()
 
-def updata():
-    ui_flag_entry_data = ' Line: ' + str(main.run_index + 1) + '\tMode: ' + str(mode) + '\tExcept: ' + str(main.error_flag)
+def updata(*temp):
+    ui_flag_entry_data = f" Line: {str(main.run_index + 1):<10}Mode: {mode:<10}"
     ui_flag_entry.delete('0',tkinter.END)
     ui_flag_entry.insert(tkinter.END,ui_flag_entry_data)
     ui_text.see(tkinter.END)
 
+
     goto_list_entry.delete('0',tkinter.END)
-    goto_list_entry.insert(tkinter.END,main.last_label)
+    for last_got_data in main.last_label:
+
+        goto_list_entry.insert(tkinter.END,str(last_got_data + 1) + ' ')
+
+def updata_click(*temp):
+    
+    line = int(float(ui_text_run.index("current")))
+
+    ui_flag_entry_data = f" Line: {str(line):<10}Mode: {str(mode):<4}"
+    ui_flag_entry.delete('0',tkinter.END)
+    ui_flag_entry.insert(tkinter.END,ui_flag_entry_data)
+    ui_text.see(tkinter.END)
+
 
 def debug_hook_nextline(data):
     ui_page.update() #刷新ui界面
@@ -60,8 +72,11 @@ def debug_hook_return(message, data=''):
 
     if message == 'first run end':
         ui_text.insert(tkinter.END,'\n预加载完成\n')
-        for line in data:
+        for line in data: #预处理后代码显示
             ui_text_run.insert(tkinter.END,(line+'\n'))
+        for stop_line in stop_place: #添加断点标签
+            
+            ui_text_run.tag_add("stopplace", f"{stop_line}.0", f"{stop_line}.end")
         
     elif message == 'end':
         run_flag = False
@@ -69,10 +84,9 @@ def debug_hook_return(message, data=''):
     elif message == 'error':
         ui_text.insert(tkinter.END,'\n发生错误\n')
         tkinter.messagebox.showerror('运行错误',data)
-        updata()
-        run_flag = False 
+        force_exit_run()
+        raise RuntimeError     
     
-    updata()
 
 def debug_hook_runline(command, command_data):
     global run_flag
@@ -83,6 +97,7 @@ def debug_hook_runline(command, command_data):
     ui_text_run.see(float(main.run_index))
 
     ui_text_value.delete('1.0',tkinter.END)
+    updata()
     
     for data_key in command_data:
         if str(data_key) in main.value.keys(): #参数是变量
@@ -103,8 +118,6 @@ def debug_hook_runline(command, command_data):
         
         if not tkinter.messagebox.askokcancel('手动运行','继续运行？'):
             raise RuntimeError
-
-    updata()
 
 main.debug_flag = True
 main.debug_hook = [debug_hook_return, debug_hook_runline, debug_hook_nextline]
@@ -184,7 +197,8 @@ def turn_mode(*temp):
         mode = '手动'
     else:
         mode = '自动'
-    updata()
+
+    updata_click()
 
 def new_file(*temp):
     ui_text_run.delete('1.0',tkinter.END)
@@ -225,7 +239,6 @@ ui_text_run = tkinter.Text(ui_page, width=50,height=23)
 ui_text_run.place(x=3, y=0)
 ui_text_run.tag_configure("highlight", background="yellow", foreground="black")
 ui_text_run.tag_configure("stopplace", background="blue", foreground="white")
-ui_text_run.bind("<Double-Button-1>",set_stop)
 ui_text_run.tag_raise("stopplace")
 ui_text_run.tag_raise("highlight")
 
@@ -245,6 +258,8 @@ scrollbar = tkinter.Scrollbar(ui_page,command=ui_text_run.yview)
 scrollbar.pack(side=tkinter.RIGHT,fill=tkinter.Y)
 ui_text_run.config(yscrollcommand = scrollbar.set)
 
+ui_text_run.bind("<Double-Button-1>",set_stop)
+ui_text_run.bind("<Button-1>",updata_click)
 #临时
 code =\
 """
@@ -257,7 +272,6 @@ cal _None #out _math_abs_return
 for line in code.split('\n'):
     ui_text_run.insert(tkinter.END,(line+'\n'))
 
-updata()
 
 ui_text_run.bind("<F5>",run)
 ui_text_run.bind("<F4>",force_exit_run)

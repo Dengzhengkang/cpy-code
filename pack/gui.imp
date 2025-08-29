@@ -1,6 +1,6 @@
 rpy gui v.1.0
 
-got ~end_gui_pack
+got ~end_gui_pack False
 
 ;控件全局变量
 new _gui_new_return _gui_label_return
