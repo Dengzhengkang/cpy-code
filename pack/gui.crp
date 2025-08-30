@@ -1,0 +1,79 @@
+rpy gui v.1.0
+
+got ~end_gui_pack False
+
+;控件全局变量
+new _gui_new_return _gui_label_return
+
+;========gui_new========
+
+new _gui_new_name _gui_new_size
+new __gui_new_sizetype
+~gui_new
+err ~~gui_new_error
+
+;未指定name
+cmp _gui_new_name 
+mov _gui_new_name "NONAME"
+
+;未指定size
+cmp _gui_new_size 
+mov _gui_new_size "256x128"
+
+cal __gui_new_sizetype #type _gui_new_size
+cmp __gui_new_sizetype Type:String
+got ~~gui_new_sizetypetrue False
+
+
+put "gui_new^ssize^stype"
+got ~
+
+~~gui_new_sizetypetrue
+cal _None #python "import^stkinter"
+cal _None #python "value['_gui_new_return']=['Type:None',tkinter.Tk()]"
+cal _None #python "value['_gui_new_return'][1].title(value['_gui_new_name'][1][1:-1])"
+cal _None #python "value['_gui_new_return'][1].geometry(value['_gui_new_size'][1][1:-1])"
+
+got ~
+
+~~gui_new_error
+err ~
+put "gui_new error"
+got ~
+
+;========gui_new end========
+
+;========gui_label========
+new _label_text
+~gui_label
+err ~~gui_label_error
+
+cal _None #out "123"
+
+new __gui_label_type
+cal __gui_label_type #type _gui_label_text
+cmp __gui_label_type Type:String
+got ~~gui_label_typetrue False
+got ~~gui_label_typefalse False
+
+~~gui_label_typetrue
+cal _None #python "value['_gui_label_return']=['Type:None’,tkinter.Label(value['_gui_new_return'][1],text=value['_gui_label_text'][1][1:-1])]"
+cal _None #python "value['_gui_label_return'][1].pack()"
+got ~
+
+~~gui_label_typefalse
+put "gui_label type error"
+got ~
+
+~~gui_label_error
+put "gui_label error"
+got ~
+
+;==========gui_label end==========
+
+;gui_mainloop
+~gui_mainloop
+cal _None #python "tkinter.mainloop()"
+got ~
+
+~end_gui_pack

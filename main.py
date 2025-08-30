@@ -1,5 +1,5 @@
 
-value = {'_None':['Type:None',''],'_Error':['Type:String','']} #[<type>,<value>]
+value = {'_None':['Type:None',''],'_Error':['Type:String','']} #[<type>,<value>],_Error:错误类型
 last_label = [0] #上一次的got位置
 error_label = ''
 error_flag = False
@@ -12,8 +12,9 @@ debug_hook = [] #钩子列表 0:返回状态 1:返回执行命令，2:执行下�
 #代码编写区↓
 code =\
 '''
-cal _None #out "123"12
-34
+new _a
+mov _a "123"
+idx _a '1'123
 '''
 #转义符 ^n:换行 ^s:空格 ^d:分隔
 # 二进制处理没做完！gui出问题，err处理加～返回默认逻辑
@@ -45,25 +46,26 @@ def run(code):
 
     def load_pack(name):
         try:
-            with open('./pack/' + str(name)[1:] + '.imp','r',encoding='utf-8') as pack:
+            with open('./pack/' + str(name)[1:] + '.crp','r',encoding='utf-8') as pack:
                 return pack.readlines()
 
         except:
             return 'Error'
 
-    def run_error(message):
+    def run_error(errtype,message): #message是调试专属
         global run_index
+        value['_Error'][1] = str(errtype)
 
         if error_flag == True: #开启err
             if debug_flag == True: #调试
-                debug_hook[0]('flag_error',message)
+                debug_hook[0]('flag_error',[type,message])
 
             run_index = error_label
-            value['_Error'][1] = '"' +str(message) +'"'
+            value['_Error'][1] = '"' +str(type) +'"'
             return
         
         elif debug_flag == True: #调试
-            debug_hook[0]('error',message)
+            debug_hook[0]('error',[type,message])
 
         else:
             print('Error: ' + str(message) + '[' + str(run_index) + ']')
@@ -96,9 +98,8 @@ def run(code):
             elif first_char == '*':
                 return 'Type:Pack'
             else:
-                return 'Type:Unkown'
-        
-
+                return 'Type:None'
+            
     #预处理new,label,imp
     before_run_line = -1
 
@@ -123,25 +124,25 @@ def run(code):
         
         elif command == 'new': #new <1> <2> ...
             if len(line) == 1:
-                run_error('FormatError')
+                run_error('FormatError','nwe format error')
                 continue
             else:
                 
                 for create_value in line.split(' ')[1:]:
                     
                     if return_type(create_value) != 'Type:Value':
-                        run_error('TypeError')
+                        run_error('TypeError','new argu type not value')
                         continue
                     else:
                         if create_value in value.keys():
-                            run_error('ValueExist')
+                            run_error('ValueExist','new value exist')
                             continue
                         else:
                             value[create_value] = ['Type:None','']
         
         elif command == 'imp':#imp <包>
             if len(line) == 1:
-                run_error('FormatError')
+                run_error('FormatError','imp format error')
                 continue
             else:
                 for imp_pack in line.split(' ')[1:]:
@@ -150,13 +151,13 @@ def run(code):
                         if return_type(value[imp_pack]) == 'Type:Pack':
                             imp_pack_name = value[imp_pack]
                         else:
-                            run_error('TypeError')
+                            run_error('TypeError','imp argu type not pack')
                             continue
                     else:
                         if return_type(imp_pack) == 'Type:Pack':
                             imp_pack_name = imp_pack
                         else:
-                            run_error('TypeError')
+                            run_error('TypeError','imp agru type not pack')
                             continue
                     
                     if imp_pack_name in include_pack:#已经导入包
@@ -164,7 +165,7 @@ def run(code):
                     else:
                         return_load = load_pack(imp_pack_name)
                         if return_load == 'Error':
-                            run_error('LoadError')
+                            run_error('LoadError','imp pack load error')
                             
                         else:
                             for pack_line in return_load[1:]:
@@ -174,7 +175,7 @@ def run(code):
 
     code = code.split('\n')
     if debug_flag == True:
-        debug_hook[0]('first run end',code)
+        debug_hook[0]('first run end',data=code)
 
 
     while run_index < len(code):
@@ -194,20 +195,20 @@ def run(code):
         
         if command == 'mov': #mov <变量> <值>
             if len(command_data) != 2:
-                run_error('FormatError')
+                run_error('FormatError','mov format error')
                 continue
 
             else:
                 if command_data[0] == '~':
                     error_flag = False
                 elif not command_data[0] in value.keys():#判断变量
-                    run_error('ValueError')
+                    run_error('ValueError','mov argu1 not value')
                     continue
 
                 else:
                     if return_type(command_data[1]) == 'Type:Value': #<值>为变量
                         if not command_data[1] in value.keys():
-                            run_error('ValueExist')
+                            run_error('ValueExist','mov argu2 not exist value')
                             continue
                         else:
                             value[command_data[0]] = value[command_data[1]]
@@ -217,12 +218,12 @@ def run(code):
     
         elif command == 'typ': #typ <变量> <类型>;int str list float
             if len(command_data) != 2:
-                run_error('FormatError')
+                run_error('FormatError','typ format error')
                 continue
             else:
                 
                 if not command_data[0] in value.keys():
-                    run_error('ValueError')
+                    run_error('ValueError','typ argu1 not exist value')
                     continue
                 else:
                     if command_data[1] == 'Type:String':
@@ -243,7 +244,7 @@ def run(code):
                                     byte_data = '-' + byte_data
             
                             except:
-                                run_error('TypeError')
+                                run_error('TypeError','typ change error')
                             else:
                                 byte_data = "'" + str(byte_data) + "'"
                                 value[command_data[0]] = ['Type:Int',byte_data]
@@ -252,7 +253,7 @@ def run(code):
                             try:
                                 typ_to_int = int(str(value[command_data[0]][1])[1:-1])
                             except:
-                                run_error('TypeError')
+                                run_error('TypeError','typ change error')
                                 continue
                             else:
                                 value[command_data[0]][1] = "'" + str(typ_to_int) + "'"
@@ -275,7 +276,7 @@ def run(code):
                                 typ_to_byte = '[' + typ_to_flag + ';' + typ_to_byte +']'
                             except:
 
-                                run_error('TypeError')
+                                run_error('TypeError','typ change error')
                                 continue
 
                             else:
@@ -285,7 +286,7 @@ def run(code):
                         elif value[command_data[0]][0] == 'Type:Strint': #计划中
                             pass
                         else:
-                            run_error('TypeError')
+                            run_error('TypeError','typ change error')
                             continue
 
 
@@ -309,37 +310,37 @@ def run(code):
                             try:
                                 to_float_data = float(str(value[command_data[0]][1])[1:-1])
                             except:
-                                run_error('TypeError')
+                                run_error('TypeError','typ change error')
                                 continue
                             else:
                                 value[command_data[0]] = ['Type:Float',('<'+ str(to_float_data) + '>')]
                         else:
-                            run_error('TypeError')
+                            run_error('TypeError','typ change error')
                             continue
                 
                     else:
                         #print('\n',line,'\n\n\n')
                         #print('\n',command_data[0],'\n')
-                        run_error('ArguError')
+                        run_error('ArguError','typ type error')
                         continue        
         
         elif command == 'got':#got <标签> (<是否记录[False]>)
             #print('got')
             if not len(command_data) >= 1:
-                run_error('FormatError')
+                run_error('FormatError','got format error')
                 continue
             else:
             
                 if command_data[0] == '~': #返回上一次got
                     if not len(last_label) > 0:
-                        run_error('LabelError')
+                        run_error('LabelError','got last_label not exist')
                         continue
                     else:
                         run_index = int(last_label[-1])
                         last_label.pop()
 
                 elif not command_data[0] in label.keys():
-                    run_error('got label not exist')
+                    run_error('LabelError','got label not exist')
                     continue
 
                 else:
@@ -353,7 +354,7 @@ def run(code):
 
         elif command == 'ifs': #ifs <值1> <值2>
             if len(command_data) != 2:
-                run_error('ifs format')
+                run_error('FormatError','ifs format error')
                 continue
 
             else:
@@ -361,7 +362,7 @@ def run(code):
                 ifs_data_1 = ['Type:None','']
                 if return_type(command_data[0]) == 'Type:Value':#<值1>为变量                    ========错误该到这===
                     if not command_data[0] in value.keys():
-                        run_error('ifs value1 not exist')
+                        run_error('ValueError','ifs argu1 not exist')
                         continue
 
                     else:
@@ -373,7 +374,7 @@ def run(code):
 
                 if return_type(command_data[1]) == 'Type:Value':#<值2>为变量
                     if not command_data[1] in value.keys():
-                        run_error('ifs value2 not exist')
+                        run_error('ValueError','ifs argu2 not exist')
                         continue
 
                     else:
@@ -392,12 +393,12 @@ def run(code):
                         run_index += 1
                 else:
                     #print(ifs_data_0[0],ifs_data_1[0])
-                    run_error('ifs value type')
+                    run_error('TypeError','ifs argu type')
                     continue
 
         elif command == 'ifb': #ifb <值1> <值2>
             if len(command_data) != 2:
-                run_error('ifb format')
+                run_error('FormatError','ifb format error')
                 continue
 
             else:
@@ -405,7 +406,7 @@ def run(code):
                 ifb_data_1 = ['Type:None','']
                 if return_type(command_data[0]) == 'Type:Value':#<值1>为变量
                     if not command_data[0] in value.keys():
-                        run_error('ifb value1 not exist')
+                        run_error('ValueError','ifb argu1 not exist')
                         continue
 
                     else:
@@ -417,7 +418,7 @@ def run(code):
 
                 if return_type(command_data[1]) == 'Type:Value':#<值2>为变量
                     if not command_data[1] in value.keys():
-                        run_error('ifb value2 not exist')
+                        run_error('ValueError','ifb argu2 not exist')
                         continue
 
                     else:
@@ -434,12 +435,12 @@ def run(code):
                     if not float(str(ifb_data_0[1])[1:-1]) > float(str(ifb_data_1[1])[1:-1]):
                         run_index += 1
                 else:
-                    run_error('ifb value type')
+                    run_error('TypeError','ifb argu type')
                     continue
 
         elif command == 'cmp': #cmp <值1> <值2>
             if len(command_data) != 2:
-                run_error('cmp format')
+                run_error('FormatError','cmp format error')
                 continue
 
             else:
@@ -447,7 +448,7 @@ def run(code):
                 cmp_data_1 = ['Type:None','']
                 if return_type(command_data[0]) == 'Type:Value':#<值1>为变量
                     if not command_data[0] in value.keys():
-                        run_error('cmp value1 not exist')
+                        run_error('ValueError','cmp argu1 not exist')
                         continue
 
                     cmp_data_0[0] = return_type(value[command_data[0]][1])
@@ -458,7 +459,7 @@ def run(code):
 
                 if return_type(command_data[1]) == 'Type:Value':#<值2>为变量
                     if not command_data[1] in value.keys():
-                        run_error('cmp value2 not exist')
+                        run_error('ValueError','cmp argu2 not exist')
                         continue
 
                     cmp_data_1[0] = return_type(value[command_data[1]][1])
@@ -475,19 +476,19 @@ def run(code):
 
         elif command == 'add': #add <变量> <值>
             if len(command_data) != 2:
-                run_error('add format')
+                run_error('FormatError','add format error')
                 continue
 
             else:
    
                 if not command_data[0] in value.keys():
-                    run_error('add value not exist value')
+                    run_error('ValueError','add value not exist value')
                     continue
         
                 else:
                     if return_type(command_data[1]) == 'Type:Value': #<值>为变量
                         if return_type(value[command_data[0]][1]) != return_type(value[command_data[1]][1]):
-                            run_error('add type not same')
+                            run_error('TypeError','add type not same')
                             continue
 
                         else:
@@ -502,12 +503,12 @@ def run(code):
                                 value[command_data[0]][1] = '"' + str(value[command_data[0]][1][1:-1] + value[command_data[1]][1][1:-1]) + '"'
                         
                             else:
-                                run_error('add value type')
+                                run_error('TypeError','add value type error')
                                 continue
 
                     else:
                         if return_type(value[command_data[0]][1]) != return_type(command_data[1]):
-                            run_error('add type not same')
+                            run_error('TypeError','add type not same')
                             continue
                         else:
                             if return_type(command_data[1]) == 'Type:Int':
@@ -519,23 +520,23 @@ def run(code):
                                 value[command_data[0]][1] = '"' + str(value[command_data[0]][1])[1:-1] + str(command_data[1][1:-1]) + '"'
                             
                             else:
-                                run_error('add value type')
+                                run_error('TypeError','add value type error')
                                 continue
 
         elif command == 'sub': #sub <变量> <值>
             if len(command_data) != 2:
-                run_error('sub format')
+                run_error('FormatError','sub format error')
                 continue
             else:
               
                 if not command_data[0] in value.keys():
-                    run_error('sub value not exist value')
+                    run_error('ValueError','sub value not exist value')
                     continue
     
                 else:
                     if return_type(command_data[1]) == 'Type:Value': #<值>为变量
                         if return_type(value[command_data[0]][1]) != return_type(value[command_data[1]][1]):
-                            run_error('sub type not same')
+                            run_error('TypeError','sub type not same')
                             continue
     
                         else:
@@ -547,12 +548,12 @@ def run(code):
                                 value[command_data[0]][1] = '<' + str(float(value[command_data[0]][1][1:-1]) - float(value[command_data[1]][1][1:-1])) + '>'
                                                 
                             else:
-                                run_error('sub value type')
+                                run_error('TypeError','sub value type error')
                                 continue
                         
                     else:
                         if return_type(value[command_data[0]][1]) != return_type(command_data[1]):
-                            run_error('sub type not same')
+                            run_error('TypeError','sub type not same')
                             continue
                         else:
                             if return_type(command_data[1]) == 'Type:Int':
@@ -563,16 +564,16 @@ def run(code):
                             elif return_type(command_data[1]) == 'Type:String':
                                 value[command_data[0]][1] = '"' + str(value[command_data[0]][1])[1:-1] - str(command_data[1][1:-1]) + '"'
                             else:
-                                run_error('sub value type')
+                                run_error('TypeError','sub value type error')
                                 continue
 
         elif command == 'mul': #mul <值1> <值2>
             if len(command_data) != 2:
-                run_error('mul format')
+                run_error('FormatError','mul format error')
                 continue
             else:
                 if not command_data[0] in value.keys():
-                    run_error('mul value1 not exist value')
+                    run_error('ValueError','mul argu1 not exist value')
                     continue
 
                 else:
@@ -583,7 +584,7 @@ def run(code):
 
                     if return_type(command_data[1]) == 'Type:Value': #值2为变量
                         if not command_data[1] in value.keys():
-                            run_error('mul value2 not exist')
+                            run_error('ValueError','mul argu2 not exist')
                             continue
                         else:
                             mul_data_1 = value[command_data[1]]
@@ -598,20 +599,20 @@ def run(code):
                                 value[command_data[0]][0] = 'Type:Float'
                                 value[command_data[0]][1] = '<' + str(float(mul_data_0[1][1:-1]) * float(mul_data_1[1][1:-1])) + '>'
                         else:
-                            run_error('mul value2 type')
+                            run_error('TypeError','mul argu2 type')
                             continue
                     else:
-                        run_error('mul value1 type')
+                        run_error('TypeError','mul agru1 type')
                         continue
 
         elif command == 'div': #div <值1> <值2>
             if len(command_data) != 2:
-                run_error('div format')
+                run_error('FormatError','div format error')
                 continue
 
             else:
                 if not command_data[0] in value.keys():
-                    run_error('div value1 not exist value')
+                    run_error('ValueError','div argu1 not exist value')
                     continue
                 
                 else:
@@ -622,7 +623,7 @@ def run(code):
 
                     if return_type(command_data[1]) == 'Type:Value': #值2为变量
                         if not command_data[1] in value.keys():
-                            run_error('div value2 not exist')
+                            run_error('ValueError','div argu2 not exist')
                             continue
                         else:
                             div_data_1 = value[command_data[1]]
@@ -638,21 +639,21 @@ def run(code):
                             value[command_data[0]][1] = '<' + str(float(div_data_0[1][1:-1]) / float(div_data_1[1][1:-1])) + '>'
 
                         else:
-                            run_error('div value2 type')
+                            run_error('Type:Error','div argu2 type')
                             continue
                     else:
-                        run_error('div value1 type')
+                        run_error('TypeError','div argu1 type')
                         continue
 
         elif command == 'cal': #cal <返回值> <命令> <参数> ; #in,#out,#read,#write,#type,#len,#split,#range
             if not len(command_data) >= 2:
-                run_error('cal format')
+                run_error('FormatError','cal format error')
                 continue
 
             else:
           
                 if not command_data[0] in value.keys():
-                    run_error('cal return not exist value')
+                    run_error('ValueError','cal return not exist value')
                     continue
                 else:
                     if command_data[1] == '#in': #<返回> #in 
@@ -666,7 +667,7 @@ def run(code):
                         if return_type(command_data[2]) == 'Type:Value':
                         
                             if not command_data[2] in value.keys():
-                                run_error('cal #out value not exist')
+                                run_error('ValueError','cal #out value not exist')
                                 continue
                             else:
                                 print_data = str(value[command_data[2]][1])
@@ -688,7 +689,7 @@ def run(code):
                         len_data = ['Type:None','']
                         if return_type(command_data[2]) == 'Type:Value':#<值>为变量
                             if not command_data[2] in value.keys():
-                                run_error('cal #len value not exist')
+                                run_error('ValueError','cal #len value not exist')
                                 continue
                             else:
                                 len_data = [value[command_data[2]][0],str(value[command_data[2]][1])]
@@ -705,14 +706,14 @@ def run(code):
                             len_data = str(len_data[1])[1:-1]
                                     
                             if not '.' in str(len_data):
-                                run_error('float type')
+                                run_error('TypeError','cal #len float type error')
                                 continue
                             else:
                                 len_data = len_data.split('.')[1]
                                 value[command_data[0]] = ['Type:Int',("'" + str(len(len_data)) + "'")]
                                     
                         else:
-                            run_error('cal #len value type')
+                            run_error('TypeError','cal #len value type')
                             continue
               
                     elif command_data[1] == '#type':#<返回> #type <值>
@@ -731,14 +732,14 @@ def run(code):
 
                         if return_type(command_data[2]) == 'Type:Value': #<值>为变量
                             if not command_data[2] in value.keys():
-                                run_error('cal #range value not exist')
+                                run_error('ValueError','cal #range value not exist')
                                 continue
 
                             else:
                                 if value[command_data[2]][0] == 'Type:String' or value[command_data[2]][0] == 'Type:List':
                                     range_data = value[command_data[2]]
                                 else:
-                                    run_error('cal #range value type')
+                                    run_error('TypeError','cal #range value type error')
                                     continue
                         else:
                             range_data = [return_type(command_data[2]),command_data[2]]
@@ -751,7 +752,7 @@ def run(code):
 
                         if return_type(command_data[3]) == 'Type:Value': #<起始索引>为变量
                             if not command_data[3] in value.keys():
-                                run_error('cal #range start not exist')
+                                run_error('ValueError','cal #range start not exist')
                                 continue
 
                             start_index = int(str(value[command_data[3]][1])[1:-1])
@@ -760,7 +761,7 @@ def run(code):
                         
                         if return_type(command_data[4]) == 'Type:Value': #<末尾索引>为变量
                             if not command_data[4] in value.keys():
-                                run_error('cal #range start not exist')
+                                run_error('ValueError','cal #range start not exist')
                                 continue
                             
                             end_index = int(str(value[command_data[4]][1])[1:-1])
@@ -790,7 +791,7 @@ def run(code):
 
                         else:
                             #print(start_index,end_index,range_data_len)
-                            run_error('cal #range index')
+                            run_error('IndexError','cal #range index over')
                             continue
 
                     elif command_data[1] == '#python':# <返回> #python <值(命令)>
@@ -799,7 +800,7 @@ def run(code):
                             if command_data[2] in value.keys(): 
                                 python_command = value[command_data[2]][1]
                             else:
-                                run_error('cal #python value not exist')
+                                run_error('ValueError','cal #python value not exist')
                         else:
                             python_command = command_data[2]
 
@@ -810,26 +811,23 @@ def run(code):
                                 exec(python_command,globals(),locals())
                             
                             except Exception as error_message:
-                                
-                                run_error('cal #python run command')
-                                print(error_message)#后期要改，临时错误输出
-                                continue
+                                value[command_data[0]] = ['Type:None',str(error_message)]
                             
                         else:
-                            run_error('cal #python value type')
+                            run_error('TypeError','cal #python value type')
 
 
                     else:
-                        run_error('cal unkown command') 
+                        run_error('ArguError','cal unkown command') 
                         continue
 
         elif command == 'bym': #bym <变量(byte()> <值> (<符号位移位>[False])
             if not len(command_data) >= 2:
-                run_error('bym format')
+                run_error('FormatError','bym format error')
                 continue
                 
             if not command_data[0] in value.keys():
-                run_error('bym value not exist value')
+                run_error('ValueError','bym value not exist value')
                 continue
             else:
                 if value[command_data[0]][0] == 'Type:Byte':
@@ -847,7 +845,7 @@ def run(code):
 
                     if return_type(command_data[1]) == 'Type:Value':#<值>为变量
                         if command_data[1] not in value.keys():
-                            run_error('bym value not exist value')
+                            run_error('ValueError','bym value not exist value')
                             continue
                         
                         else:
@@ -865,17 +863,17 @@ def run(code):
                     
 
                 else:
-                    run_error('bym value type')
+                    run_error('TypeError','bym value type error')
                     continue
         
         elif command == 'psh': #psh <变量(list)> <值>
             if len(command_data) != 2:
-                run_error('psh format')
+                run_error('FormatError','psh format error')
                 continue
 
             else:
                 if not command_data[0] in value.keys():
-                    run_error('psh value not exist value')
+                    run_error('ValueError','psh value not exist value')
                     continue
 
                 else:
@@ -891,16 +889,16 @@ def run(code):
 
                         value[command_data[0]] = ['Type:List',psh_data]
                     else:
-                        run_error('psh value type')
+                        run_error('TypeError','psh value type error')
 
         elif command == 'pop': #pop <变量(list)> <索引>
             if len(command_data) != 2:
-                run_error('pop format')
+                run_error('FormatError','pop format error')
                 continue
             else:
             
                 if not command_data[0] in value.keys():
-                    run_error('pop value not exist value')
+                    run_error('ValueError','pop value not exist value')
                     continue
 
                 else:
@@ -909,7 +907,7 @@ def run(code):
                         pop_data = str(value[command_data[0]][1])[1:-1].split(';')
                         pop_len = len(pop_data)
                         if int(command_data[1][1:-1]) >= pop_len:
-                            run_error('pop index over')
+                            run_error('IndexError','pop index over')
                             continue
 
                         else:
@@ -926,28 +924,29 @@ def run(code):
 
                             value[command_data[0]] = ['Type:List',pop_return_list]
                     else:
-                        run_error('pop value type')
+                        run_error('Type:Error','pop value type error')
                         continue
                 
 
-        elif command == 'idx': #idx <变量(list)> <索引>
+        elif command == 'idx': #idx <变量> <索引>
             if len(command_data) != 2:
-                run_error('idx format')
+                run_error('FormatError','idx format error')
                 continue
             else:
                 if command_data[0] not in value.keys():
-                    run_error('idx value not exist value')
+                    run_error('ValueError','idx value not exist value')
                     continue
-                else:
-                    
+                else:             
                     idx_data_list = ['Type:None','']
                     if value[command_data[0]][0] == 'Type:List':
                         idx_data_list[1] = str(value[command_data[0]][1])[1:-1].split(';')
                         
-                    elif value[command_data[0]][0] == 'Type:Strint':
+                    
+                    elif value[command_data[0]][0] == 'Type:String':
                         idx_data_list[1] = str(value[command_data[0]][1])[1:-1]
+
                     else:
-                        run_error('idx value type')
+                        run_error('TypeError','idx value type error')
                         continue
                         
                     idx_data_idx = ['Type:Int','']    
@@ -957,12 +956,16 @@ def run(code):
                             idx_data_idx[1] = int(str(value[command_data[1]][1])[1:-1])
             
                         else:
-                            run_error('idx index type')
+                            run_error('TypeError','idx index type error')
                             continue
                     else:
-                        idx_data_idx[1] = int(str(command_data[1])[1:-1])  
+                        try:
+                            idx_data_idx[1] = int(str(command_data[1])[1:-1])  
+                        except:
+                            run_error('ArguError','idx index type error')
+
                     if idx_data_idx[1] >= len(idx_data_list[1]):
-                        run_error('idx index over')
+                        run_error('IndexError','idx index over')
                         continue
                     else:
                         idx_data_idx[0] = return_type(idx_data_idx[1])
@@ -972,7 +975,7 @@ def run(code):
 
         elif command == 'err':# err <标签>
             if len(command_data) != 1:
-                run_error('err format')
+                run_error('FormatError','err format error')
                 continue
             else:
                 if command_data[0] == '~':
@@ -983,21 +986,21 @@ def run(code):
                     error_flag = True
                     error_label = label[command_data[0]]
                 else:
-                    run_error('err label not exist')
+                    run_error('ValueError','err label not exist')
                     continue
    
-        elif command == 'put': #put <错误>
-            if len(command_data) != 1:
-                run_error('put format')
+        elif command == 'put': #put <错误类型> <错误>
+            if len(command_data) != 2:
+                run_error('FormatError','put format error')
                 continue
 
             else:
-                run_error(translatr.to_out(command_data[0][1:-1]))
+                run_error(translatr.to_out(command_data[0][1:-1]),translatr.to_out(command_data[1][1:-1]))
                 continue
 
         else:
             #print(command)
-            run_error('CommandError')
+            run_error('CommandError','unknowError')
             continue
 
         #print(value)

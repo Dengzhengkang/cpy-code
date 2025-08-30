@@ -80,7 +80,7 @@ def force_exit_run(*temp):#强行退出运行
 
     ui_text.configure(state='disabled')
 
-def debug_hook_return(message, data=''):
+def debug_hook_return(message,error_data='',data=''):
     global run_flag
 
     ui_text.configure(state='normal')
@@ -97,7 +97,7 @@ def debug_hook_return(message, data=''):
 
     elif message == 'error':
         ui_text.insert(tkinter.END,'\n发生错误\n')
-        tkinter.messagebox.showerror('运行错误',data)
+        tkinter.messagebox.showerror('运行错误',(error_data[0]+'\n'+error_data[1]))
         run_flag = False
         raise RuntimeError     
 
@@ -106,7 +106,7 @@ def debug_hook_return(message, data=''):
     
     ui_text.configure(state='disabled')
 
-def debug_hook_runline(command, command_data):
+def debug_hook_runline(command='',command_data=''):
     global run_flag
 
     ui_text_run.tag_remove("highlight",'1.0',tkinter.END)
